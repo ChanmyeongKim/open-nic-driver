@@ -175,12 +175,12 @@ static int onic_acquire_msix_vectors(struct onic_private *priv)
  **/
 static void onic_set_num_queues(struct onic_private *priv)
 {
-	struct net_device *dev = priv->netdev;
+//	struct net_device *dev = priv->netdev;
 
-	priv->num_tx_queues =
-		min_t(u16, priv->num_q_vectors, dev->real_num_tx_queues);
-	priv->num_rx_queues =
-		min_t(u16, priv->num_q_vectors, dev->real_num_rx_queues);
+	priv->num_tx_queues = 1;
+//		min_t(u16, priv->num_q_vectors, dev->real_num_tx_queues);
+	priv->num_rx_queues = 1;
+//		min_t(u16, priv->num_q_vectors, dev->real_num_rx_queues);
 }
 
 int onic_init_capacity(struct onic_private *priv)

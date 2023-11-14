@@ -61,6 +61,7 @@ static void onic_tx_clean(struct onic_tx_queue *q)
 
 	qdma_unpack_wb_stat(&wb, ring->wb);
 
+    pr_err("[TX_CLEAN : %d] cidx: %6d   to_clean: %6d   pidx: %6d  to_use: %6d", q->qid, wb.cidx, ring->next_to_clean, wb.pidx, ring->next_to_use);
 	if (wb.cidx == ring->next_to_clean) {
 		clear_bit(0, q->state);
 		return;
@@ -74,9 +75,22 @@ static void onic_tx_clean(struct onic_tx_queue *q)
 		struct onic_tx_buffer *buf = &q->buffer[ring->next_to_clean];
 		struct sk_buff *skb = buf->skb;
 
-		dma_unmap_single(&priv->pdev->dev, buf->dma_addr, buf->len,
-				 DMA_TO_DEVICE);
-		dev_kfree_skb_any(skb);
+        if (unlikely(!skb)) {
+	        struct qdma_dev *qdev = (struct qdma_dev *)(priv->hw.qdma);
+            u32 err = qdma_read_reg(qdev, QDMA_OFFSET_GLBL_ERR_STAT);
+
+            u32 pidx_offset = QDMA_OFFSET_DMAP_SEL_H2C_DESC_PIDX + (q->qid * 16);
+            u32 pidx = qdma_read_reg(qdev, pidx_offset);
+
+            pr_err("!!!!!!!!!!!!!!!!!!!!! SKB NOT FOUND %d, err: %u, pidx: %u !!!!!!!!!!!!!!!!!!!!!!", i, err, pidx);
+
+
+        }
+        else {
+            dma_unmap_single(&priv->pdev->dev, buf->dma_addr, buf->len,
+                     DMA_TO_DEVICE);
+            dev_kfree_skb_any(skb);
+        }
 
 		onic_ring_increment_tail(ring);
 	}
@@ -368,6 +382,7 @@ static int onic_init_tx_queue(struct onic_private *priv, u16 qid)
 	ring = &q->ring;
 	ring->count = onic_ring_count(rngcnt_idx);
 	real_count = ring->count - 1;
+    pr_err("tx_ring_count: %u", ring->count);
 
 	/* allocate DMA memory for TX descriptor ring */
 	size = QDMA_H2C_ST_DESC_SIZE * real_count + QDMA_WB_STAT_SIZE;
@@ -482,6 +497,7 @@ static int onic_init_rx_queue(struct onic_private *priv, u16 qid)
 	ring = &q->desc_ring;
 	ring->count = onic_ring_count(desc_rngcnt_idx);
 	real_count = ring->count - 1;
+    pr_err("rx_ring_count: %u", ring->count);
 
 	size = QDMA_C2H_ST_DESC_SIZE * real_count + QDMA_WB_STAT_SIZE;
 	size = ALIGN(size, PAGE_SIZE);
@@ -535,6 +551,7 @@ static int onic_init_rx_queue(struct onic_private *priv, u16 qid)
 	ring = &q->cmpl_ring;
 	ring->count = onic_ring_count(cmpl_rngcnt_idx);
 	real_count = ring->count - 1;
+    pr_err("cmpl_ring_count: %u", ring->count);
 
 	size = QDMA_C2H_CMPL_SIZE * real_count + QDMA_C2H_CMPL_STAT_SIZE;
 	size = ALIGN(size, PAGE_SIZE);
@@ -738,6 +755,7 @@ netdev_tx_t onic_xmit_frame(struct sk_buff *skb, struct net_device *dev)
 		wmb();
 		onic_set_tx_head(priv->hw.qdma, qid, ring->next_to_use);
 	}
+    pr_err("[XMIT_FRAME : %d]                                                                      to_use: %6d", q->qid, ring->next_to_use);
 
 	return NETDEV_TX_OK;
 }
