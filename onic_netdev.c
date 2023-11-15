@@ -49,12 +49,47 @@ inline static void onic_ring_increment_tail(struct onic_ring *ring)
 	ring->next_to_clean = (ring->next_to_clean + 1) % real_count;
 }
 
+
+static void buf_hex_dump(char *buf, int len)
+{
+  int rowsize = 16; 
+  int i, l, linelen, remaining, li; 
+  char *buf_recover;
+  __u8 ch; 
+
+  buf_recover = buf; // Save current location 
+  remaining = len;
+  li = 0;
+  
+  for (i = 0; i < len; i += rowsize) {
+    printk("%06d\t", li);
+
+    linelen = min(remaining, rowsize);
+    remaining -= rowsize;
+
+    for (l = 0; l < linelen; l++) {
+      ch = buf[l];
+      printk(KERN_CONT "%02X ", (uint32_t) ch);
+    }   
+
+    buf += linelen;
+    li += 10; 
+
+    printk(KERN_CONT "\n");
+  }
+
+  buf = buf_recover;
+}
+
+
 static void onic_tx_clean(struct onic_tx_queue *q)
 {
 	struct onic_private *priv = netdev_priv(q->netdev);
 	struct onic_ring *ring = &q->ring;
 	struct qdma_wb_stat wb;
 	int work, i;
+
+	static int first = 1;
 
 	if (test_and_set_bit(0, q->state))
 		return;
@@ -84,6 +119,14 @@ static void onic_tx_clean(struct onic_tx_queue *q)
 
             pr_err("!!!!!!!!!!!!!!!!!!!!! SKB NOT FOUND %d, err: %u, pidx: %u !!!!!!!!!!!!!!!!!!!!!!", i, err, pidx);
 
+			if (first == 1) {
+                int j;
+                for (j = 0; j < 4096; j++) {
+                    pr_err("[%d]", j);
+                    buf_hex_dump(ring->desc + QDMA_H2C_ST_DESC_SIZE * j, QDMA_H2C_ST_DESC_SIZE);
+                }
+                first = 0;
+			}
 
         }
         else {
@@ -154,7 +197,7 @@ static int onic_rx_poll(struct napi_struct *napi, int budget)
 	color_stat = cmpl_stat.color;
 	if (debug)
 		netdev_info(
-			q->netdev,
+		q->netdev,
 			"\n rx_poll:  cmpl_stat_pidx %u, color_cmpl_stat %u, cmpl_ring next_to_clean %u, cmpl_stat_cidx %u, intr_state %u, cmpl_ring->count %u",
 			cmpl_stat.pidx, color_stat, cmpl_ring->next_to_clean,
 			cmpl_stat.cidx, cmpl_stat.intr_state, cmpl_ring->count);
