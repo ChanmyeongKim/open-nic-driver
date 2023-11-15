@@ -31,6 +31,7 @@
  **/
 static inline u32 qdma_read_reg(struct qdma_dev *qdev, u32 offset)
 {
+    pr_err("[qdma_read] %u", offset);
 	return ioread32(qdev->addr + offset);
 }
 
@@ -42,6 +43,7 @@ static inline u32 qdma_read_reg(struct qdma_dev *qdev, u32 offset)
  **/
 static inline void qdma_write_reg(struct qdma_dev *qdev, u32 offset, u32 val)
 {
+    pr_err("[qdma_write] %u", offset);
 	iowrite32(val, qdev->addr + offset);
 }
 
