@@ -49,6 +49,39 @@ inline static void onic_ring_increment_tail(struct onic_ring *ring)
 	ring->next_to_clean = (ring->next_to_clean + 1) % real_count;
 }
 
+static void buf_hex_dump(char *buf, int len)
+{
+  int rowsize = 16; 
+  int i, l, linelen, remaining, li; 
+  char *buf_recover;
+  __u8 ch; 
+
+  buf_recover = buf; // Save current location 
+  remaining = len;
+  li = 0;
+  
+  for (i = 0; i < len; i += rowsize) {
+    printk("%06d\t", li);
+
+    linelen = min(remaining, rowsize);
+    remaining -= rowsize;
+
+    for (l = 0; l < linelen; l++) {
+      ch = buf[l];
+      printk(KERN_CONT "%02X ", (uint32_t) ch);
+    }   
+
+    buf += linelen;
+    li += 10; 
+
+    printk(KERN_CONT "\n");
+  }
+
+  buf = buf_recover;
+}
+
+
+
 static void onic_tx_clean(struct onic_tx_queue *q)
 {
 	struct onic_private *priv = netdev_priv(q->netdev);
@@ -716,6 +749,8 @@ netdev_tx_t onic_xmit_frame(struct sk_buff *skb, struct net_device *dev)
 	desc.src_addr = dma_addr;
 	desc.metadata = skb->len;
 	qdma_pack_h2c_st_desc(desc_ptr, &desc);
+
+    buf_hex_dump(desc_ptr, QDMA_H2C_ST_DESC_SIZE);
 
 	q->buffer[ring->next_to_use].skb = skb;
 	q->buffer[ring->next_to_use].dma_addr = dma_addr;
