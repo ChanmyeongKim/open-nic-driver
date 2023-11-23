@@ -30,14 +30,14 @@ static inline u32 onic_read_reg(struct onic_hardware *hw, u32 offset)
 static inline void onic_write_reg(struct onic_hardware *hw, u32 offset, u32 val)
 {
 
-      if (0x900000 <= offset && offset <= 0x904fff) pr_err("onic write @ %x", offset);
+      pr_err("onic write // addr %x, val %d", offset, val);
 //    if (0x1000 <= offset && offset <= 0x5fff) pr_err("onic write @ %x", offset);
 //    if (0x8000 <= offset && offset <= 0xafff) pr_err("onic write @ %x", offset);
 	iowrite32(val, hw->addr + offset);
 }
 
 #define SHELL_START					0x0
-#define SHELL_END					0x400000 /* include CMS register space, 0x320000 to 0x330000 */
+#define SHELL_END					0x1000000 /* include CMS register space, 0x320000 to 0x330000 */
 #define SHELL_MAXLEN					(SHELL_END - SHELL_START)
 
 /***** system config registers *****/
