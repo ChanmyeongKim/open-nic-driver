@@ -21,11 +21,18 @@
 
 static inline u32 onic_read_reg(struct onic_hardware *hw, u32 offset)
 {
-	return ioread32(hw->addr + offset);
+      if (0x900000 <= offset && offset <= 0x904fff) return ioread32(hw->addr + offset);
+//    if (0x1000 <= offset && offset <= 0x5fff) return ioread32(hw->addr + offset);
+//    if (0x8000 <= offset && offset <= 0xafff) return ioread32(hw->addr + offset);
+    return 0;
 }
 
 static inline void onic_write_reg(struct onic_hardware *hw, u32 offset, u32 val)
 {
+
+      if (0x900000 <= offset && offset <= 0x904fff) pr_err("onic write @ %x", offset);
+//    if (0x1000 <= offset && offset <= 0x5fff) pr_err("onic write @ %x", offset);
+//    if (0x8000 <= offset && offset <= 0xafff) pr_err("onic write @ %x", offset);
 	iowrite32(val, hw->addr + offset);
 }
 
@@ -45,7 +52,7 @@ static inline void onic_write_reg(struct onic_hardware *hw, u32 offset, u32 val)
 #define SYSCFG_OFFSET_USER_STATUS			(SYSCFG_OFFSET + 0x18)
 
 /***** QDMA subsystem registers *****/
-#define QDMA_SUBSYSTEM_OFFSET				0x1000
+#define QDMA_SUBSYSTEM_OFFSET				0x900000
 #define QDMA_FUNC_OFFSET(i)				(QDMA_SUBSYSTEM_OFFSET + (0x1000 * i))
 #define QDMA_SUBSYS_OFFSET				(QDMA_SUBSYSTEM_OFFSET + 0x4000)
 
